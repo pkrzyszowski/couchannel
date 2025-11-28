@@ -11,19 +11,19 @@ paths:
           description: OK
   /events:
     get:
-      summary: List available events
+      summary: List available viewing sessions
       responses:
         '200':
-          description: Collection of events
+          description: Collection of sessions
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/EventListing'
+                  $ref: '#/components/schemas/ViewingSession'
 components:
   schemas:
-    EventListing:
+    ViewingSession:
       type: object
       required:
         - id

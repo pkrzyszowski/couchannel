@@ -1,4 +1,4 @@
-"""create events table"""
+"""create viewing sessions table"""
 
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
@@ -15,7 +15,7 @@ depends_on = None
 
 def upgrade() -> None:
     op.create_table(
-        "events",
+        "viewing_sessions",
         sa.Column("id", sa.String(), primary_key=True),
         sa.Column("title", sa.String(length=255), nullable=False),
         sa.Column("starts_at", sa.DateTime(timezone=True), nullable=False),
@@ -44,7 +44,7 @@ def upgrade() -> None:
         },
     ]
     events_table = table(
-        "events",
+        "viewing_sessions",
         column("id", sa.String()),
         column("title", sa.String()),
         column("starts_at", sa.DateTime(timezone=True)),
@@ -56,4 +56,4 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_table("events")
+    op.drop_table("viewing_sessions")

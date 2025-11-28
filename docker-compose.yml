@@ -8,6 +8,12 @@ services:
       - "8000:8000"
     environment:
       - PYTHONPATH=/app
+      - API_AUTH_ENABLED=true
+      - API_OIDC_JWKS_URL=http://identity:8000/.well-known/jwks.json
+      - API_OIDC_ISSUER=http://identity:8000
+      - API_OIDC_AUDIENCE=couchannel-api
+    depends_on:
+      - identity
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
   identity:
@@ -34,8 +40,12 @@ services:
     environment:
       - PYTHONPATH=/app
       - INVENTORY_DATABASE_URL=postgresql+psycopg://couchchannel:couchchannel@db:5432/couchchannel
+      - INVENTORY_KAFKA_BOOTSTRAP=redpanda:9092
+      - INVENTORY_KAFKA_TOPIC=booking.events
+      - INVENTORY_KAFKA_ENABLED=true
     depends_on:
       - db
+      - redpanda
     command: ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
 
   booking:
@@ -47,6 +57,11 @@ services:
       - "8103:8000"
     environment:
       - PYTHONPATH=/app
+      - BOOKING_KAFKA_BOOTSTRAP=redpanda:9092
+      - BOOKING_KAFKA_TOPIC=booking.events
+      - BOOKING_KAFKA_ENABLED=true
+    depends_on:
+      - redpanda
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
   web:
@@ -68,6 +83,9 @@ services:
     working_dir: /workspace
     environment:
       - PYTHONPATH=/workspace
+      - BOOKING_KAFKA_ENABLED=false
+      - INVENTORY_KAFKA_ENABLED=false
+      - API_AUTH_ENABLED=false
     volumes:
       - .:/workspace
     command: ["bash", "-lc", "pip install -r requirements-dev.txt && pytest"]
@@ -87,6 +105,14 @@ services:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v24.2.3
+    command:
+      - redpanda start --overprovisioned --smp 1 --memory 1G --reserve-memory 0M --node-id 0 --check=false
+    ports:
+      - "9092:9092"
+      - "9644:9644"
 
 volumes:
   postgres-data:

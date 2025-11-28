@@ -6,7 +6,7 @@ from sqlmodel import Session, SQLModel, create_engine
 
 from services.inventory.app.dependencies import get_session
 from services.inventory.app.main import app
-from services.inventory.app.models import Event
+from services.inventory.app.models import ViewingSession
 
 TEST_ENGINE = create_engine(
     "sqlite://",
@@ -34,7 +34,7 @@ def teardown_function(_: object) -> None:  # pragma: no cover
 
 def seed_event() -> None:
     with Session(TEST_ENGINE) as session:
-        event = Event(
+        event = ViewingSession(
             title="Test Derby",
             starts_at=datetime.utcnow() + timedelta(hours=5),
             slots_total=5,

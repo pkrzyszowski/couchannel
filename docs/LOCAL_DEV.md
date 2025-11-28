@@ -1,24 +1,27 @@
-# Lokalny development couchannel
+# Local development (EN)
 
-## Wymagania
-- Docker Desktop lub inny zgodny runtime
-- Node.js 20+ (jeśli chcesz uruchamiać web poza kontenerem)
-- Python 3.12 (dla uruchomień lokalnych mikroserwisów)
+_Polish instructions: [`LOCAL_DEV.pl.md`](LOCAL_DEV.pl.md)._ 
 
-## Kroki startowe
-1. `cp .env.example .env` – ustaw domyślne adresy usług.
-2. `make compose-up` – startuje Postgres, Redis, wszystkie mikroserwisy oraz front.
-3. Front dostępny na `http://localhost:5173`, API gateway na `http://localhost:8000`.
-4. Po zakończeniu: `make compose-down` (z `-v` jeśli chcesz usunąć dane Postgresa).
+## Requirements
+- Docker Desktop or compatible runtime.
+- Node.js 20+ (optional, only if you want to run the web client outside Docker).
+- Python 3.12 (optional, for running lint/tests without containers).
 
-## Przydatne komendy
-- `make lint` – uruchamia Ruff na hostcie.
-- `make test` lub `./run-tests.sh` – budują kontener `tests` (python:3.12), instalują `requirements-dev.txt` i uruchamiają `pytest -vv` wewnątrz; dodatkowe flagi przekaż przez `TEST_ARGS`.
-- `docker compose logs -f <service>` – tail logów konkretnej usługi.
-- `docker compose exec db psql -U couchchannel -d couchchannel` – wejście do Postgresa.
-- `docker compose exec inventory alembic revision --autogenerate -m "desc"` – generowanie migracji (pamiętaj o ustawionym `INVENTORY_DATABASE_URL`).
+## Getting started
+1. `cp .env.example .env` – provides default URLs, Kafka settings, Redis/Postgres credentials.
+2. `make compose-up` – spins up Postgres, Redis, Redpanda (Kafka), API gateway, identity/inventory/booking, and the React web app.
+3. Visit `http://localhost:5173` (web) and `http://localhost:8000` (API). Inventory auto-runs Alembic and seeds demo viewing sessions.
+4. Stop everything with `make compose-down` (add `-v` to drop Postgres volume).
 
-## Najczęstsze problemy
-- **Inventory się nie podnosi** – sprawdź logi; jeżeli `alembic` nie ma połączenia z DB, odczekaj chwilę lub wydłuż start (np. `sleep 5 && alembic ...`).
-- **Web pokazuje "Unable to reach API"** – upewnij się, że `api` działa na 8000 i pamiętaj, że proxy usuwa prefiks `/api` (konfiguracja w `apps/web/vite.config.ts`).
-- **Testy nie widzą modułów** – uruchamiaj z `PYTHONPATH=$(pwd)` albo użyj wirtualnego środowiska z `pip install -r requirements-dev.txt`.
+## Useful commands
+- `make lint` – runs Ruff locally.
+- `make test` / `./run-tests.sh` – builds the `tests` container (Python 3.12), installs `requirements-dev.txt`, and executes `pytest -vv`. Disable Kafka/auth inside the test container via env vars; pass extra flags via `TEST_ARGS`.
+- `docker compose logs -f <service>` – tail logs for debugging.
+- `docker compose exec db psql -U couchchannel -d couchchannel` – inspect Postgres.
+- `docker compose exec inventory alembic revision --autogenerate -m "message"` – generate new migrations (ensure env vars are set).
+
+## Troubleshooting
+- **Identity/Redis issues** – ensure `IDENTITY_REDIS_URL` matches Docker Compose (redis service). Restart container if flush fails.
+- **Inventory not starting** – check logs; Redpanda or Postgres might still be initialising. Compose already declares dependencies, but you can add a short `sleep` or `wait-for-it` if needed.
+- **Frontend shows "Unable to reach API"** – confirm API runs on port 8000 and `/api` proxy rewrites (`apps/web/vite.config.ts`).
+- **Tests can't import modules** – run via `make test` (Docker container) or set `PYTHONPATH=$(pwd)` before `pytest` locally.

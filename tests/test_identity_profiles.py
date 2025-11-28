@@ -1,7 +1,7 @@
 import asyncio
 
-from fastapi.testclient import TestClient
 from fakeredis import FakeServer, aioredis
+from fastapi.testclient import TestClient
 
 from services.identity.app.cache import get_cache
 from services.identity.app.main import app

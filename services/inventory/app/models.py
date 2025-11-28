@@ -6,8 +6,8 @@ from uuid import uuid4
 from sqlmodel import Field, SQLModel
 
 
-class Event(SQLModel, table=True):
-    __tablename__ = "events"
+class ViewingSession(SQLModel, table=True):
+    __tablename__ = "viewing_sessions"
 
     id: str = Field(default_factory=lambda: str(uuid4()), primary_key=True, index=True)
     title: str
@@ -19,7 +19,7 @@ class Event(SQLModel, table=True):
     price_pln: int = Field(default=0, ge=0)
 
 
-class EventRead(SQLModel):
+class ViewingSessionRead(SQLModel):
     id: str
     title: str
     starts_at: datetime

@@ -9,6 +9,11 @@ class Settings(BaseSettings):
 
     inventory_url: str = Field(default="http://inventory:8000")
     identity_url: str = Field(default="http://identity:8000")
+    auth_enabled: bool = Field(default=True)
+    oidc_jwks_url: str = Field(default="http://identity:8000/.well-known/jwks.json")
+    oidc_issuer: str = Field(default="http://identity:8000")
+    oidc_audience: str = Field(default="couchannel-api")
+    oidc_algorithm: str = Field(default="RS256")
 
 
 settings = Settings()
