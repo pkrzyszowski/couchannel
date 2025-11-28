@@ -1,0 +1,52 @@
+openapi: 3.0.3
+info:
+  title: Booking Service API
+  version: 0.1.0
+paths:
+  /healthz:
+    get:
+      summary: Health probe
+      responses:
+        '200':
+          description: OK
+  /bookings:
+    post:
+      summary: Create a booking placeholder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+      responses:
+        '201':
+          description: Booking created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingResponse'
+components:
+  schemas:
+    BookingRequest:
+      type: object
+      required: [event_id, guest_id]
+      properties:
+        event_id:
+          type: string
+        guest_id:
+          type: string
+        seats:
+          type: integer
+          default: 1
+    BookingResponse:
+      type: object
+      required: [booking_id, status, reserved_at]
+      properties:
+        booking_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+        reserved_at:
+          type: string
+          format: date-time

@@ -1,0 +1,92 @@
+services:
+  api:
+    build:
+      context: ./services/api
+    volumes:
+      - ./services/api:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/app
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  identity:
+    build:
+      context: ./services/identity
+    volumes:
+      - ./services/identity:/app
+    ports:
+      - "8101:8000"
+    environment:
+      - PYTHONPATH=/app
+      - IDENTITY_REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  inventory:
+    build:
+      context: ./services/inventory
+    volumes:
+      - ./services/inventory:/app
+    ports:
+      - "8102:8000"
+    environment:
+      - PYTHONPATH=/app
+      - INVENTORY_DATABASE_URL=postgresql+psycopg://couchchannel:couchchannel@db:5432/couchchannel
+    depends_on:
+      - db
+    command: ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
+
+  booking:
+    build:
+      context: ./services/booking
+    volumes:
+      - ./services/booking:/app
+    ports:
+      - "8103:8000"
+    environment:
+      - PYTHONPATH=/app
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  web:
+    build:
+      context: ./apps/web
+    volumes:
+      - ./apps/web:/app
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+      - identity
+      - inventory
+      - booking
+    command: ["sh", "-c", "npm install && npm run dev -- --host 0.0.0.0 --port 5173"]
+
+  tests:
+    image: python:3.12-slim
+    working_dir: /workspace
+    environment:
+      - PYTHONPATH=/workspace
+    volumes:
+      - .:/workspace
+    command: ["bash", "-lc", "pip install -r requirements-dev.txt && pytest"]
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=couchchannel
+      - POSTGRES_PASSWORD=couchchannel
+      - POSTGRES_DB=couchchannel
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres-data:

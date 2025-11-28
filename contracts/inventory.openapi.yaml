@@ -1,0 +1,53 @@
+openapi: 3.0.3
+info:
+  title: Inventory Service API
+  version: 0.1.0
+paths:
+  /healthz:
+    get:
+      summary: Health probe
+      responses:
+        '200':
+          description: OK
+  /events:
+    get:
+      summary: List available events
+      responses:
+        '200':
+          description: Collection of events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventListing'
+components:
+  schemas:
+    EventListing:
+      type: object
+      required:
+        - id
+        - title
+        - starts_at
+        - slots_total
+        - slots_available
+        - location
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        starts_at:
+          type: string
+          format: date-time
+        slots_total:
+          type: integer
+        slots_available:
+          type: integer
+        location:
+          type: string
+        host_id:
+          type: string
+        price_pln:
+          type: integer

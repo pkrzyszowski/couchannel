@@ -1,0 +1,50 @@
+openapi: 3.0.3
+info:
+  title: Identity Service API
+  version: 0.1.0
+paths:
+  /healthz:
+    get:
+      summary: Health probe
+      responses:
+        '200':
+          description: Service healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  service:
+                    type: string
+                  status:
+                    type: string
+  /profiles/{user_id}:
+    get:
+      summary: Fetch a public profile
+      parameters:
+        - in: path
+          name: user_id
+          schema:
+            type: string
+          required: true
+          description: couchannel user identifier
+      responses:
+        '200':
+          description: Profile payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+components:
+  schemas:
+    Profile:
+      type: object
+      required: [user_id, display_name, reputation]
+      properties:
+        user_id:
+          type: string
+        display_name:
+          type: string
+        reputation:
+          type: number
+          format: float
