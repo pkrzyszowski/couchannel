@@ -6,6 +6,7 @@ from typing import Dict, List
 from fastapi import Depends, FastAPI, HTTPException
 from httpx import AsyncClient, HTTPError
 from pydantic import BaseModel
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from .auth import UserClaims, require_user
 from .config import settings
@@ -40,6 +41,7 @@ class TokenRequest(BaseModel):
 
 
 app = FastAPI(title="couchannel API", version="0.1.0")
+Instrumentator().instrument(app).expose(app)
 
 
 @app.on_event("shutdown")

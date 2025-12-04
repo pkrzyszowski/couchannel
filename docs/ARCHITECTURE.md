@@ -11,8 +11,9 @@ _See also the Polish version: [`ARCHITECTURE.pl.md`](ARCHITECTURE.pl.md)._
 ## Key patterns
 - **API Gateway + BFF** – FastAPI edge service exposes REST, aggregates data for web/mobile BFFs, enforces throttling, feature flags, auth.
 - **Service Discovery & Config** – environment variables + Vault/Dynaconf; plan for Consul/Eureka when the platform grows.
-- **Event-driven communication** – Kafka/Redpanda domain events. Booking publishes `booking.events`, inventory consumes and updates availability. Critical flows will adopt Outbox + Event Sourcing.
+- **Event-driven communication** – Kafka/Redpanda domain events. Booking publishes `booking.events`, inventory consumes and updates availability, analytics-service consumes the same stream to build aggregate stats.
 - **Saga/Choreography** – Booking orchestrates inventory, pricing, payment, compliance; compensating transactions release seats/refunds on failure.
+- **Persistent saga state** – Booking writes each reservation to Postgres (`booking_records`) so saga steps can resume after restarts and other services (analytics, notification) can query status directly.
 - **CQRS** – write models in Postgres, read models (search, dashboards) materialized via Kafka consumers.
 - **Observability** – OpenTelemetry + Prometheus/Grafana/Tempo; every service exposes `/healthz`, `/readinessz`, and propagates trace IDs.
 - **Security** – API Gateway applies rate limiting, retries, idempotency, mTLS via service mesh (Istio/Linkerd). Per-tenant isolation planned for enterprise edition. OIDC demo issuer is built-in for dev.

@@ -4,6 +4,7 @@ from typing import Dict, List
 
 from fastapi import Depends, FastAPI
 from sqlmodel import Session
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from . import crud
 from .dependencies import get_session
@@ -11,6 +12,7 @@ from .events import start_event_consumer, stop_event_consumer
 from .models import ViewingSessionRead
 
 app = FastAPI(title="Inventory Service", version="0.1.0")
+Instrumentator().instrument(app).expose(app)
 
 
 @app.on_event("startup")

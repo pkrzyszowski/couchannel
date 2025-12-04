@@ -1,0 +1,43 @@
+name: E2E
+
+on:
+  pull_request:
+    branches: ["main", "master"]
+
+jobs:
+  playwright:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install Playwright deps
+        working-directory: e2e
+        run: |
+          npm install
+          npx playwright install --with-deps
+      - name: Start compose stack
+        run: docker compose up -d api identity inventory booking db redis redpanda
+      - name: Wait for API readiness
+        run: |
+          for i in {1..40}; do
+            if curl -fsS http://localhost:8000/healthz >/dev/null; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "API failed to start" >&2
+          docker compose logs api identity inventory booking
+          exit 1
+      - name: Run Playwright tests
+        working-directory: e2e
+        env:
+          COUCHANNEL_BASE_URL: http://localhost:8000
+        run: npx playwright test
+      - name: Compose logs (on failure)
+        if: failure()
+        run: docker compose logs
+      - name: Shutdown stack
+        if: always()
+        run: docker compose down -v

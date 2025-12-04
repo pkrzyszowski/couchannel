@@ -1,19 +1,20 @@
 # couchannel
 
-Couchannel is a BlaBlaCar-style platform for shared sports-stream sessions: hosts open their living rooms + streaming packages so guests can split subscription costs. This repo contains a minimal microservice skeleton (FastAPI, React, Docker Compose) ready to demo to recruiters or evolve into a full product. (Polish version: [`README.pl.md`](README.pl.md))
+Couchannel is a microservice playground for shared sports-stream sessions: hosts open their living rooms + streaming packages so guests can split subscription costs. This repo contains a minimal stack (FastAPI, React, Docker Compose, Redpanda) that you can run locally or iterate on. (Polish version: [`README.pl.md`](README.pl.md))
 
 ## Structure
 - `services/api` – FastAPI gateway/BFF with `/healthz` and `/events/aggregated` that fans out to downstream services.
-- `services/identity`, `services/inventory`, `services/booking` – domain microservices with their own Dockerfiles and OpenAPI specs; booking publishes Kafka events, inventory consumes them.
+- `services/identity`, `services/inventory`, `services/booking`, `services/analytics` – domain microservices with their own Dockerfiles and OpenAPI specs; booking persists rows + emits events, inventory consumes them, analytics aggregates stats from the same stream.
 - `apps/web` – React (Vite + TypeScript) frontend that proxies to the API via `/api`.
+- Frontend now fetches tokens, lists sessions, and (soon) will allow posting bookings directly from the UI.
 - Frontend obtains a demo bearer token via `POST /api/auth/token` (gateway proxies to Identity) and uses it against `/api/events/aggregated`.
 - `contracts/` – OpenAPI 3.0 specifications, source of truth for interfaces.
-- `docker-compose.yml` – orchestrates Postgres, Redis, microservices, and frontend.
+- `docker-compose.yml` – orchestrates Postgres, Redis, Redpanda (Kafka), Prometheus, Grafana, microservices, and frontend.
 
 ## Local run
 1. Install Docker Desktop (or any compatible runtime).
 2. Clone the repo and copy `.env.example` to `.env` (default service URLs and credentials).
-3. Run `make compose-up` – builds containers and starts the gateway (`localhost:8000`), microservices (`identity:8101`, `inventory:8102`, `booking:8103`), Postgres (`localhost:5432`), Redis (`localhost:6379`), and web (`localhost:5173`).
+3. Run `make compose-up` – builds containers and starts the gateway (`localhost:8000`), microservices (`identity:8101`, `inventory:8102`, `booking:8103`, `analytics:8104`), Postgres (`localhost:5432`), Redis (`localhost:6379`), Redpanda (`9092`), Prometheus (`9090`), Grafana (`3000`), and web (`5173`).
 4. Inventory runs Alembic (`alembic upgrade head`) on startup, seeding demo events into Postgres.
 5. Redpanda (Kafka-compatible) powers the booking event stream; containers auto-create the `booking.events` topic.
 6. Hot reload is enabled via bind mounts. Stop everything with `make compose-down` (add `-v` to drop DB data).
@@ -25,12 +26,13 @@ Couchannel is a BlaBlaCar-style platform for shared sports-stream sessions: host
 
 ## Auth & event bus quickstart
 - Request a demo token via `POST /api/auth/token` (the gateway proxies to Identity) and use it as `Authorization: Bearer <token>` when hitting `/api/events/aggregated`.
-- Booking emits JSON events to the `booking.events` Kafka topic (Redpanda). Inventory consumes them and decrements `slots_available` for the matching event ID. Inspect activity with `docker compose logs booking inventory redpanda -f`.
+- Booking writes rows into `booking_records` (Postgres) and emits JSON events to the `booking.events` Kafka topic (Redpanda). Inventory konsumuje je i aktualizuje `slots_available`, a analytics-service zlicza łączną liczbę rezerwacji per sesja i wystawia `GET /stats`. Inspect activity with `docker compose logs booking inventory analytics redpanda -f`.
+- Prometheus scrapes `/metrics` from each FastAPI service; Grafana (anonymous login) is reachable at `http://localhost:3000` for quick dashboards.
 
 ## CI/CD, e2e & publishing
-1. `.github/workflows/quality.yml` runs Ruff + pytest on every push/PR to `main`/`master`.
-2. `.github/workflows/docker-build.yml` builds (and optionally pushes) Docker images for `api`, `identity`, `inventory`, `booking`, `web`. Configure `GHCR_USERNAME`/`GHCR_TOKEN` with `workflow` scope to push to `ghcr.io/<owner>/couchannel-<service>:latest`.
-3. End-to-end scaffolding lives in `e2e/` (Playwright). Run `cd e2e && npm install && npx playwright test` against a running `make compose-up` stack.
+1. `.github/workflows/quality.yml` runs Ruff + pytest on every PR to `main/master`.
+2. `.github/workflows/e2e.yml` spins up the Docker Compose stack in CI and runs `npx playwright test` (API-only scenario). Locally wykonaj `cd e2e && npm install && npx playwright test` przy działającym `make compose-up`.
+3. Docker image publishing workflow jest tymczasowo przeniesiony do `.github/workflows/_unused/`. Wróci, gdy będziesz potrzebował deploymentów.
 4. See `docs/DEPLOYMENT.md` for the Helm/Kubernetes release plan (GH Actions → Helm upgrade with manual approvals).
 
 ## Next steps

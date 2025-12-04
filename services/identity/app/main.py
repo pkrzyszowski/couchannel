@@ -5,6 +5,7 @@ from typing import Dict, List
 from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel
 from redis.asyncio import Redis
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from .auth import get_jwks, mint_token
 from .cache import close_cache, get_cache
@@ -23,6 +24,7 @@ class TokenRequest(BaseModel):
 
 
 app = FastAPI(title="Identity Service", version="0.1.0")
+Instrumentator().instrument(app).expose(app)
 
 
 @app.on_event("shutdown")

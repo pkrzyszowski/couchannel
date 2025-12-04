@@ -1,6 +1,6 @@
 # Architektura mikroserwisowa couchannel
 
-Aplikacja umożliwia gospodarzom udostępnianie miejsca i pakietów streamingowych do wspólnego oglądania wydarzeń sportowych. Kod piszemy w Pythonie 3.12 na FastAPI (serwisy + BFF), a klienci webowi/komórkowi korzystają z React/Next.js, aby projekt był łatwy do zaprezentowania rekruterom.
+Aplikacja umożliwia gospodarzom udostępnianie miejsca i pakietów streamingowych do wspólnego oglądania wydarzeń sportowych. Kod piszemy w Pythonie 3.12 na FastAPI (serwisy + BFF), a klienci webowi/komórkowi korzystają z React/Next.js, co pozwala łatwo prezentować projekt i szybko go rozbudowywać.
 
 ## Bounded Contexts i serwisy
 - **Identity & Reputation** – `identity-service` (Auth0/OAuth 2.1 + WebAuthn), `trust-service` (reputacja, KYC, AML). Oddzielne magazyny: Postgres + Redis na sesje.
@@ -11,9 +11,10 @@ Aplikacja umożliwia gospodarzom udostępnianie miejsca i pakietów streamingowy
 ## Wzorce projektowe
 - **API Gateway + BFF** – Edge layer (Kong/Apigee) wystawia REST/gRPC, a FastAPI BFF-y (web, mobile) agregują dane dla Reacta. Umożliwia throttling, A/B, feature flags.
 - **Service Discovery & Config** – Consul/Eureka + HashiCorp Vault/Dynaconf zapewniają centralne zarządzanie konfiguracją, rotację kluczy i secret zero-trust.
-- **Asynchroniczna komunikacja** – Domain events na Kafka/Redpanda; w repo `booking` publikuje `booking.events`, a `inventory` konsumuje je, aktualizując dostępne miejsca. Dla synchronicznych wywołań gRPC + Circuit Breaker (Envoy + Tenacity w klientach FastAPI).
+- **Asynchroniczna komunikacja** – Domain events na Kafka/Redpanda; w repo `booking` publikuje `booking.events`, `inventory` konsumuje je, aktualizując dostępne miejsca, a `analytics-service` zlicza statystyki tego samego strumienia. Dla synchronicznych wywołań gRPC + Circuit Breaker (Envoy + Tenacity w klientach FastAPI).
 - **Federated Identity/OIDC** – `identity-service` udostępnia JWKS + endpoint wydający tokeny; gateway (FastAPI BFF) weryfikuje bearer tokeny i scope `read:events` zanim przekaże dane do frontu.
 - **Saga & Choreography** – rezerwacja miejsc = `booking-service` orkiestruje `inventory`, `pricing`, `payment`, `compliance`. Przy niepowodzeniu wykonuje kompensację (odblokowanie miejsc, refund).
+- **Stan Sagi w bazie** – `booking-service` zapisuje każdą rezerwację w Postgresie (`booking_records`), żeby można było wznowić proces po restarcie i udostępnić statusy innym serwisom (analytics, powiadomienia).
 - **CQRS + Materialized Views** – oddzielne modele zapisu/odczytu; `search-service` buduje indeksy near-real-time z topiców `inventory.events`.
 - **Observability** – OpenTelemetry, Prometheus, Tempo/Grafana. Każdy serwis ma `healthz`, `readinessz`, tracing IDs przekazywane przez gateway.
 - **Resilience & Security** – Podobnie jak w BlaBlaCar: rate limiting na gateway, retry + backoff, circuit breakers, idempotentne endpointy, polityki mTLS (service mesh Istio/Linkerd) i podział tenantów.
